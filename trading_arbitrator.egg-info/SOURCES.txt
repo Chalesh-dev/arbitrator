@@ -1,0 +1,15 @@
+README.md
+setup.py
+tests/test_arbitrator.py
+tests/test_main.py
+tests/test_primitives.py
+trading_arbitrator/__init__.py
+trading_arbitrator/amm.py
+trading_arbitrator/arbitrator.py
+trading_arbitrator/errors.py
+trading_arbitrator/primitives.py
+trading_arbitrator.egg-info/PKG-INFO
+trading_arbitrator.egg-info/SOURCES.txt
+trading_arbitrator.egg-info/dependency_links.txt
+trading_arbitrator.egg-info/requires.txt
+trading_arbitrator.egg-info/top_level.txt
