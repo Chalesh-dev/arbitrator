@@ -1,5 +1,5 @@
 import time
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from trading_arbitrator.primitives import Pool, Converter
 from trading_arbitrator.amm import constant_product_amm, constant_sum_amm
 from trading_arbitrator.arbitrator import Arbitrator
@@ -19,11 +19,13 @@ d = []
 for i in range(0,10000,1):
     d.append(loops[0].convert(amount=i/10, with_fees=True)-i/10)
 print(loops[0].get_max_absolute_profit())
+print(loops[0])
 results = []
 for i in range(0,200):
     results.append(loops[0].convert(i) - i)
-plt.plot(results)
-plt.xlabel("Initial investment")
-plt.ylabel("Simulated absolute profits\n(returns - initial investment)")
-plt.grid()
-plt.show()
+# plt.plot(results)
+# plt.xlabel("Initial investment")
+# plt.ylabel("Simulated absolute profits\n(returns - initial investment)")
+# plt.grid()
+# plt.show()
+
