@@ -23,22 +23,25 @@ class Arb:
     address_TUSD = Web3.to_checksum_address("0x0000000000085d4780B73119b644AE5ecd22b376")
     address_USDC = Web3.to_checksum_address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")
     address_USDT = Web3.to_checksum_address("0xdAC17F958D2ee523a2206206994597C13D831ec7")
-    address_token = [address_USDT, address_USDC, address_TUSD, address_WBTC, address_WETH]
+    address_token = [address_USDC, address_WBTC, address_WETH,address_TUSD,address_USDT]
     contract_uniswap_factory = w3.eth.contract(address=address_Uniswap_factory, abi=uni_factory_abi)
     contract_sushi_factory = w3.eth.contract(address=address_sushi_factory, abi=sushi_factory_abi)
 
-
-    converter = Converter(name="CPAMM", conversion_formula=constant_product_amm, fee=1)  # Fee is in %, so 5%
+    converter = Converter(name="CPAMM", conversion_formula=constant_product_amm, fee=0.3)  # Fee is in %, so 5%
 
     def __init__(self):
         self.factories = [self.contract_uniswap_factory, self.contract_sushi_factory]
+        self.pool = self.get_pair()
+        self.pool_contract = self.pool_contract_binder()
+        self.tokens = self.get_tokens()
+        self.reserves = self.get_reserves()
 
 
     def get_pair(self):
         pool = []
         for factory in self.factories:
             for i in range(len(self.address_token)):
-                for j in range(len(self.address_token)):
+                for j in range(i + 1, len(self.address_token)):
                     address_pool = factory.functions.getPair(self.address_token[i],
                                                              self.address_token[j]).call()
                     pool.append([address_pool, factory.address])
@@ -46,46 +49,57 @@ class Arb:
 
     def pool_contract_binder(self):
         pl = list()
-        for item in self.get_pair():
-            if item[1] == self.contract_uniswap_factory and item[0] != '0x0000000000000000000000000000000000000000':
+        for item in self.pool:
+            if item[1] == self.contract_uniswap_factory.address and item[
+                0] != '0x0000000000000000000000000000000000000000':
                 pl.append(w3.eth.contract(address=item[0], abi=uni_pool_abi))
-            elif item[1] == self.contract_sushi_factory and item[0] != '0x0000000000000000000000000000000000000000':
+            elif item[1] == self.contract_sushi_factory.address and item[
+                0] != '0x0000000000000000000000000000000000000000':
                 pl.append(w3.eth.contract(address=item[0], abi=sushi_pool_abi))
+            else:
+                pl.append(None)
         return pl
 
     def get_tokens(self):
         tk = []
-        for item in self.pool_contract_binder():
-            tk.append([item.functions.token0().call(), item.functions.token1().call()])
+        for item in self.pool_contract:
+            if item is None:
+                tk.append(None)
+            else:
+                tk.append([item.functions.token0().call(), item.functions.token1().call()])
         return tk
 
     def get_reserves(self):
         res = []
-        for item in self.pool_contract_binder():
-            reserve = item.functions.getReserves().call()
-            reserve.pop()
-            res.append(reserve)
+        for item in self.pool_contract:
+            if item is None:
+                res.append(None)
+            else:
+                reserve = item.functions.getReserves().call()
+                reserve.pop()
+                res.append(reserve)
         return res
 
-    def route_generator(self,init_token):
+    def route_generator(self, init_token):
         pl = []
-        pools = self.get_pair()
-        tokens = self.get_tokens()
-        print(tokens,"tokens")
-        reserves = self.get_reserves()
-        for i in range(len(pools)):
-            p = Pool(name=pools[i][0], assets=[tokens[i][0], tokens[i][1]],
-                     amounts=[reserves[i][0], reserves[i][1]],
-                     converter=self.converter)
-            pl.append(p)
+
+        for i in range(len(self.pool)):
+            if self.pool[i] != None and self.tokens[i]!=None and self.reserves[i] != None:
+                p = Pool(name=self.pool[i][0], assets=[self.tokens[i][0], self.tokens[i][1]],
+                         amounts=[self.reserves[i][0], self.reserves[i][1]],
+                         converter=self.converter)
+                pl.append(p)
         arb = Arbitrator(pools=pl, initial_assets=[init_token])
         loops = arb.get_loops(sizes=[2, 3, 4, 5])
         return loops
 
-    def arbitrage(self,init_token):
+    def arbitrage(self, init_token):
         loops = self.route_generator(init_token)
         return loops[0].get_max_absolute_profit()
 
 
 x = Arb()
+print(x.arbitrage(x.address_WETH))
+print(x.arbitrage(x.address_USDT))
 print(x.arbitrage(x.address_WBTC))
+
