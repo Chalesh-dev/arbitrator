@@ -64,6 +64,10 @@ class Arb:
     def reinit2(self):
         self.reserves = Thread(target=self.get_reserves)
 
+    def pool_finder(self,factory,i,j):
+         return factory.functions.getPair(self.address_token[i],
+                                                 self.address_token[j]).call()
+
     def get_pair(self):
         print('getting pool ...')
         pool = []
@@ -71,9 +75,7 @@ class Arb:
             for i in range(len(self.address_token)):
                 for j in range(i + 1, len(self.address_token)):
                     print(factory.address, "factory checked for a pair in ", i, j)
-                    address_pool = factory.functions.getPair(self.address_token[i],
-                                                             self.address_token[j]).call()
-                    pool.append([address_pool, factory.address])
+                    pool.append([self.pool_finder(factory,i,j), factory.address])
         return pool
 
     def pool_contract_binder(self):
